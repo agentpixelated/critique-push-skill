@@ -1,0 +1,299 @@
+{
+  "$id": "https://example.invalid/critique-push/critique-schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A user critique of an agentic-AI tool, to be pushed to the tool's GitHub repo as an Issue. See SPEC.md. This schema is the SINGLE authoritative contract for a critique record: the bridge (bridge/push.py), the dedicated adapter (adapters/dedicated/capture.sh) and the ephemeral adapter (adapters/ephemeral/flush-now.sh) all emit and validate this exact shape. additionalProperties stays false on purpose \u2014 a field that is not declared here is a bug in the emitter, not something to silently allow. Bridge-compat fields (tool/body/date/user_words/evidence) and queue-lifecycle fields (agent_id/labels/created_at/attempts/next_retry_at, status 'queued'/'failed-held') are declared explicitly below, so the one shape covers both the GitHub issue and the local queue.",
+  "properties": {
+    "actual": {
+      "description": "What actually happened.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "attachments": {
+      "description": "Redacted attachments only, included with user approval.",
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "screenshot",
+              "log",
+              "other"
+            ],
+            "type": "string"
+          },
+          "path": {
+            "description": "Local path to the redacted attachment.",
+            "type": "string"
+          },
+          "redacted": {
+            "description": "True only after the redaction pass.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "path"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "category": {
+      "enum": [
+        "bug",
+        "ux-friction",
+        "wrong-output",
+        "missing-feature",
+        "confusing-copy",
+        "other"
+      ],
+      "type": "string"
+    },
+    "consent_includes_sensitive": {
+      "default": false,
+      "description": "True only when the user explicitly approved including a sensitive item; record what was included in notes.",
+      "type": "boolean"
+    },
+    "date_wib": {
+      "description": "Capture date in Asia/Jakarta, format YYYY-MM-DD HH:mm WIB.",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2} WIB$",
+      "type": "string"
+    },
+    "dedup_key": {
+      "description": "tool_name + normalized symptom, computed at validate time. Same key within 7 days = comment, not new Issue.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "environment": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "description": "Model in use, if relevant and known.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "notes": {
+          "description": "Any other observed environment detail.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "os": {
+          "description": "e.g. Fedora 42, macOS 15, Windows 11. Use 'unknown' if not observable.",
+          "type": "string"
+        },
+        "runtime": {
+          "description": "cli | chat | dedicated-box | ephemeral-sandbox | null.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "os"
+      ],
+      "type": "object"
+    },
+    "expected": {
+      "description": "What the user expected instead.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "id": {
+      "description": "Local unique id, e.g. crit-20261125-001. Assigned at capture time.",
+      "type": "string"
+    },
+    "impact": {
+      "description": "One line on impact, user's words where possible.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "notes": {
+      "description": "Free-form notes, e.g. what sensitive item the user approved, or why a field is unknown.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "receipt": {
+      "description": "Filled after a successful push. Null until then.",
+      "properties": {
+        "comment_url": {
+          "description": "Set instead of a new issue when dedup applied.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "issue_number": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "issue_url": {
+          "format": "uri",
+          "type": "string"
+        },
+        "pushed_at_wib": {
+          "pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2} WIB$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "issue_url",
+        "issue_number"
+      ],
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "repro_steps": {
+      "description": "Only steps actually run or observed. Empty array when none are known.",
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "0.1.0",
+      "description": "Schema version. Bump on any breaking change.",
+      "type": "string"
+    },
+    "severity": {
+      "description": "Only set when the user stated it. Never agent-assigned.",
+      "enum": [
+        "blocker",
+        "major",
+        "minor",
+        "annoyance",
+        null
+      ],
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "status": {
+      "description": "Pipeline status. pushed/commented are terminal success; unflushed means the ephemeral session ended before push. 'queued' is the dedicated adapter's on-disk queue state; 'failed-held' is a queued critique after 3 failed flush attempts.",
+      "enum": [
+        "draft",
+        "validated",
+        "pending",
+        "pending-unmapped",
+        "queued",
+        "pushed",
+        "commented",
+        "unflushed",
+        "skipped",
+        "failed-held"
+      ],
+      "type": "string"
+    },
+    "target_repo": {
+      "description": "owner/repo resolved from the registry. Never guessed.",
+      "pattern": "^[^/\\s]+/[^/\\s]+$",
+      "type": "string"
+    },
+    "title": {
+      "description": "Issue title: [<category>] <symptom in <= 10 words>.",
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string"
+    },
+    "tool_commit": {
+      "description": "Observed commit hash, or null when not observable.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "tool_name": {
+      "description": "Name of the tool being critiqued, e.g. codex, claude-code, omp, hermes.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "tool_version": {
+      "description": "Observed tool version, or null when not observable. Never guessed.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "what_happened": {
+      "description": "The user's exact words (verbatim quote) describing what happened.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "tool": {
+      "description": "Bridge-compat alias of tool_name (bridge/push.py minimal contract). Must equal tool_name when both are present.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "body": {
+      "description": "Bridge-compat alias of what_happened: the critique body the bridge renders. Must equal what_happened when both are present.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "date": {
+      "description": "Bridge-compat date, YYYY-MM-DD, derived from date_wib. The bridge validates this format.",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "user_words": {
+      "description": "Verbatim user quote used by the issue template. Defaults to what_happened when absent.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "evidence": {
+      "description": "Agent-observed evidence (command output, logs, version strings) for the template's Agent-added evidence section. 'None recorded by the agent.' when empty.",
+      "type": "string"
+    },
+    "agent_id": {
+      "description": "Queue-lifecycle: id of the agent that captured the critique (e.g. hermes, omp). Never rewritten by the flushing agent.",
+      "type": "string"
+    },
+    "labels": {
+      "description": "Queue-lifecycle: comma-separated labels the bridge passes to `gh issue create`, e.g. 'bug,ux'. Empty string = none.",
+      "type": "string"
+    },
+    "created_at": {
+      "description": "Queue-lifecycle: UTC ISO-8601 timestamp of capture, e.g. 2026-11-25T10:30:00Z. Used for oldest-first flush order.",
+      "type": "string"
+    },
+    "attempts": {
+      "description": "Queue-lifecycle: flush attempts so far. Starts at 0; max 3, then status becomes failed-held.",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "next_retry_at": {
+      "description": "Queue-lifecycle: UTC ISO-8601 time of the next retry, or null when no retry is scheduled.",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "tool_name",
+    "category",
+    "title",
+    "what_happened",
+    "expected",
+    "actual",
+    "impact",
+    "environment",
+    "date_wib",
+    "target_repo",
+    "dedup_key",
+    "status"
+  ],
+  "title": "Critique",
+  "type": "object"
+}

@@ -1,0 +1,20 @@
+# critique-push registry — tool_name -> target_repo (owner/repo).
+# PLACEHOLDERS ONLY: no real repos are mapped yet. Do not invent one.
+# A real mapping needs the user's approval per tool (see README.md).
+# Until then, pass --repo explicitly and never guess a repo.
+tools:
+  - tool_name: codex
+    target_repo: OWNER/REPO
+    notes: "placeholder — no real repo mapped yet"
+  - tool_name: claude-code
+    target_repo: OWNER/REPO
+    notes: "placeholder — no real repo mapped yet"
+  - tool_name: omp
+    target_repo: OWNER/REPO
+    notes: "placeholder — no real repo mapped yet"
+  - tool_name: hermes
+    target_repo: OWNER/REPO
+    notes: "placeholder — no real repo mapped yet"
+  - tool_name: muse
+    target_repo: OWNER/REPO
+    notes: "placeholder — no real repo mapped yet"

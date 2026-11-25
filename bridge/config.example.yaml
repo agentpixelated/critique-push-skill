@@ -1,0 +1,20 @@
+# critique-push bridge — example configuration.
+# Copy to config.yaml and fill in YOUR values. Placeholders only —
+# no real repo, token, or username belongs in this file.
+# NEVER put a token in this file. Tokens come from the environment
+# (GH_TOKEN / GITHUB_TOKEN) or from `gh auth` only.
+
+# Target repo for filed critiques, as owner/repo.
+repo: "OWNER/REPO"
+
+# Labels applied to every issue created by the bridge (optional).
+labels:
+  - critique
+
+# Default assignee: none. Critiques are filed unassigned on purpose —
+# triage belongs to the repo maintainers, not the filing agent.
+assignee: null
+
+# Safety default: dry-run is ON unless --live is passed explicitly.
+# Do not change this to false here; --live is a per-invocation decision.
+dry_run: true
